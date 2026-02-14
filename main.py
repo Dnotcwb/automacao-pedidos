@@ -1,3 +1,14 @@
+"""
+>>> SISTEMA DE IMPORTAÇÃO FISCAL (FAIL-SAFE MODE)
+
+Este arquivo pode ser usado de 2 formas:
+1. Via GUI: Execute app.py (interface amigável)
+2. Via Terminal: Execute este arquivo (automação original)
+
+Versão: 1.0 Corrigida (com fixes de CNPJ, layouts e quantidade)
+Data: 14/02/2026
+"""
+
 import os
 import glob
 import pandas as pd
@@ -10,6 +21,8 @@ from datetime import datetime
 print(">>> SISTEMA DE IMPORTAÇÃO FISCAL (FAIL-SAFE MODE)")
 
 def main():
+    """Processa PDFs em modo terminal (sem GUI)"""
+    
     print("="*60)
     print("VALIDAÇÃO RÍGIDA DE CNPJ ATIVADA")
     print("Arquivos sem CNPJ validado serão enviados para Auditoria.")
@@ -19,6 +32,7 @@ def main():
         print(">>> Carregando tabelas e Whitelist de CNPJs...")
         manager = DataManager()
         processor = PDFProcessor()
+        print("✅ Dados carregados com sucesso")
     except Exception as e:
         print(f"❌ Erro crítico: {e}")
         return
@@ -26,6 +40,7 @@ def main():
     input_folder = "entrada_pdfs"
     if not os.path.exists(input_folder):
         os.makedirs(input_folder)
+        print(f"📁 Pasta '{input_folder}' criada. Coloque seus PDFs lá.")
         return
 
     pdf_files = glob.glob(os.path.join(input_folder, "*.pdf"))
@@ -33,7 +48,7 @@ def main():
         print(f"⚠️  Nenhum PDF encontrado em '{input_folder}'.")
         return
 
-    print(f"📄 Encontrados {len(pdf_files)} arquivos.")
+    print(f"📄 Encontrados {len(pdf_files)} arquivo(s).")
     
     # Listas segregadas
     valid_data = []
@@ -49,7 +64,7 @@ def main():
             print(f"   ✅ ACEITO: {len(result['itens'])} linhas geradas.")
             valid_data.extend(result['itens'])
         else:
-            print(f"   ⛔ REJEITADO: {result['motivo']}")
+            print(f"   ❌ REJEITADO: {result['motivo']}")
             rejected_data.append({
                 'Arquivo': filename,
                 'Status': result['status'],
@@ -73,7 +88,11 @@ def main():
         
         df_final = df_final.fillna("")
         
-        name_import = f"Importacao_ERP_{timestamp}.xlsx"
+        # Salva em pasta saida_importacao
+        if not os.path.exists('saida_importacao'):
+            os.makedirs('saida_importacao')
+        
+        name_import = f"saida_importacao/Importacao_ERP_{timestamp}.xlsx"
         df_final.to_excel(name_import, index=False)
         print(f"🚀 [IMPORTAÇÃO] Arquivo gerado: {name_import}")
         print(f"📊 Total de linhas válidas: {len(df_final)}")
@@ -84,13 +103,19 @@ def main():
     if rejected_data:
         print("\n>>> Gerando Relatório de Auditoria (Rejeitados)...")
         df_audit = pd.DataFrame(rejected_data)
-        name_audit = f"Relatorio_Auditoria_Rejeitados_{timestamp}.xlsx"
+        
+        # Salva em pasta saida_auditoria
+        if not os.path.exists('saida_auditoria'):
+            os.makedirs('saida_auditoria')
+        
+        name_audit = f"saida_auditoria/Relatorio_Auditoria_Rejeitados_{timestamp}.xlsx"
         df_audit.to_excel(name_audit, index=False)
         print(f"🛡️ [AUDITORIA] Arquivo gerado: {name_audit}")
         print(f"📊 Total de arquivos rejeitados: {len(df_audit)}")
 
-    print("="*60)
+    print("\n" + "="*60)
     print("PROCESSAMENTO CONCLUÍDO")
+    print("="*60)
 
 if __name__ == "__main__":
     main()

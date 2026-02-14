@@ -11,7 +11,13 @@ logging.basicConfig(
 )
 
 class DataManager:
+    """
+    Gerenciador de dados - Singleton Pattern
+    Carrega e centraliza acesso aos dados dos arquivos Excel
+    """
+    
     _instance = None
+    
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(DataManager, cls).__new__(cls)
@@ -19,6 +25,11 @@ class DataManager:
         return cls._instance
 
     def load_data(self):
+        """
+        Carrega dados dos arquivos Excel de referência
+        - mapeamento_teknisa.xlsx: Whitelist de CNPJs
+        - Relatorio potes.xlsx: Catálogo de produtos
+        """
         print("📂 Carregando bases de dados (Excel)...")
         try:
             # --- CLIENTES (BASE DE VALIDAÇÃO) ---
@@ -47,14 +58,26 @@ class DataManager:
             self.df_produtos['Nome do Produto'] = self.df_produtos['Nome do Produto'].astype(str).str.upper().str.strip()
             
             print(f"✅ DADOS FISCAIS: {len(self.valid_cnpjs)} CNPJs válidos carregados para whitelist.")
+            print(f"✅ PRODUTOS: {len(self.df_produtos)} produtos carregados.")
             
         except Exception as e:
             logging.critical(f"Erro ao carregar arquivos Excel de referência: {e}")
             print(f"❌ ERRO CRÍTICO DE DADOS: {e}")
+            print("\n📌 Verifique se os arquivos existem no diretório:")
+            print("   - mapeamento_teknisa.xlsx")
+            print("   - Relatorio potes.xlsx")
             raise e
 
     def get_valid_products_dict(self):
+        """
+        Retorna dicionário: Código → Nome do Produto
+        Usado para busca rápida de produtos
+        """
         return dict(zip(self.df_produtos['Código'], self.df_produtos['Nome do Produto']))
 
     def get_valid_products_names(self):
+        """
+        Retorna lista de nomes de produtos
+        Usado para busca fuzzy (matching por nome similar)
+        """
         return self.df_produtos['Nome do Produto'].tolist()
